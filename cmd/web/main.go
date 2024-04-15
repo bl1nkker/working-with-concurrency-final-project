@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,13 +28,13 @@ func main() {
 
 	// Create loggers
 
-	// This line creates a new logger named infoLog. It writes log messages to the standard output (os.Stdout). 
-	// The prefix for each log message is set to "INFO\t", followed by a tab character (\t). 
+	// This line creates a new logger named infoLog. It writes log messages to the standard output (os.Stdout).
+	// The prefix for each log message is set to "INFO\t", followed by a tab character (\t).
 	// The logging format includes the date and time of each log message (log.Ldate|log.Ltime).
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	// This line creates another logger named errorLog. It also writes log messages to the standard output (os.Stdout). 
-	// The prefix for each log message is set to "ERROR\t", followed by a tab character (\t). 
-	// The logging format includes the date and time of each log message (log.Ldate|log.Ltime), as well as the file name and line number 
+	// This line creates another logger named errorLog. It also writes log messages to the standard output (os.Stdout).
+	// The prefix for each log message is set to "ERROR\t", followed by a tab character (\t).
+	// The logging format includes the date and time of each log message (log.Ldate|log.Ltime), as well as the file name and line number
 	// where the log message was generated (log.Lshortfile).
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -54,7 +55,7 @@ func main() {
 	// Set up mail
 
 	// Listen for web connections
-
+	app.serve()
 }
 
 func initDB() *sql.DB {
@@ -130,4 +131,19 @@ func initRedis() *redis.Pool {
 		},
 	}
 	return redisPool
+}
+
+func (app *Config) serve() {
+	// start http server
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", webPort),
+		Handler: app.routes(),
+	}
+
+	app.Infolog.Println("Starting web server...")
+	err := srv.ListenAndServe()
+
+	if err != nil {
+		log.Panic(err)
+	}
 }
