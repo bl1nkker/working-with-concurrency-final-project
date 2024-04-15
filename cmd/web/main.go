@@ -3,9 +3,13 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -17,7 +21,9 @@ func main() {
 	// Connect to database
 	db := initDB()
 	db.Ping()
+
 	// Create sessions
+	session := initSession()
 
 	// Create some channels
 
@@ -73,4 +79,35 @@ func openDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func initSession() *scs.SessionManager {
+	// set up session
+	session := scs.New()
+	session.Store = redisstore.New(initRedis())
+	// This sets the lifetime of each session to 24 hours. Sessions will expire and be deleted from storage after this duration of inactivity.
+	session.Lifetime = 24 * time.Hour
+	// This configures the session cookie to persist across browser sessions.
+	// When set to true, the session cookie will remain on the user's device even after they close their browser.
+	session.Cookie.Persist = true
+	// This sets the SameSite attribute of the session cookie to "Lax" mode, which restricts cookies from being sent in cross-site requests
+	// initiated by third-party websites. This is a security measure to prevent certain types of attacks, such as CSRF (Cross-Site Request Forgery).
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	// This indicates that the session cookie should only be sent over HTTPS connections, ensuring that it is transmitted securely over encrypted channels.
+	session.Cookie.Secure = true
+	return session
+}
+
+func initRedis() *redis.Pool {
+	redisPool := &redis.Pool{
+		// This sets the maximum number of idle connections in the pool to 10.
+		// Idle connections are those that are not currently in use but are kept open for future use to avoid the overhead of creating new connections.
+		MaxIdle: 10,
+		// This sets up a function literal (also known as an anonymous function) to establish a new connection to the Redis server.
+		// The Dial function returns a redis.Conn object (a connection to the Redis server) and an error.
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", os.Getenv("REDIS"))
+		},
+	}
+	return redisPool
 }
