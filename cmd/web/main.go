@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/alexedwards/scs/redisstore"
@@ -20,16 +21,35 @@ const webPort = "80"
 func main() {
 	// Connect to database
 	db := initDB()
-	db.Ping()
 
 	// Create sessions
 	session := initSession()
 
+	// Create loggers
+
+	// This line creates a new logger named infoLog. It writes log messages to the standard output (os.Stdout). 
+	// The prefix for each log message is set to "INFO\t", followed by a tab character (\t). 
+	// The logging format includes the date and time of each log message (log.Ldate|log.Ltime).
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	// This line creates another logger named errorLog. It also writes log messages to the standard output (os.Stdout). 
+	// The prefix for each log message is set to "ERROR\t", followed by a tab character (\t). 
+	// The logging format includes the date and time of each log message (log.Ldate|log.Ltime), as well as the file name and line number 
+	// where the log message was generated (log.Lshortfile).
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	// Create some channels
 
 	// Create wait group
+	wg := sync.WaitGroup{}
 
 	// Set up the application config
+	app := Config{
+		Session:  session,
+		DB:       db,
+		Wait:     &wg,
+		Infolog:  infoLog,
+		ErrorLog: errorLog,
+	}
 
 	// Set up mail
 
