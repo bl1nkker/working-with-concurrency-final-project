@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"working-with-concurrency-final-project/data"
 
 	"github.com/alexedwards/scs/redisstore"
 	"github.com/alexedwards/scs/v2"
@@ -52,6 +53,7 @@ func main() {
 		Wait:     &wg,
 		Infolog:  infoLog,
 		ErrorLog: errorLog,
+		Models:   data.New(db),
 	}
 
 	// Set up mail
