@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,7 +21,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-const webPort = "80"
+const webPort = "1234"
 
 func main() {
 	// Connect to database
@@ -59,7 +60,7 @@ func main() {
 	// Set up mail
 
 	// listen for signals
-	app.listenForShutdown()
+	go app.listenForShutdown()
 
 	// Listen for web connections
 	app.serve()
@@ -110,6 +111,7 @@ func openDB(dsn string) (*sql.DB, error) {
 }
 
 func initSession() *scs.SessionManager {
+	gob.Register(data.User{})
 	// set up session
 	session := scs.New()
 	session.Store = redisstore.New(initRedis())
