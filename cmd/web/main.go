@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/alexedwards/scs/redisstore"
@@ -53,6 +55,9 @@ func main() {
 	}
 
 	// Set up mail
+
+	// listen for signals
+	app.listenForShutdown()
 
 	// Listen for web connections
 	app.serve()
@@ -146,4 +151,22 @@ func (app *Config) serve() {
 	if err != nil {
 		log.Panic(err)
 	}
+}
+
+func (app *Config) listenForShutdown() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	app.shutdown()
+	os.Exit(0)
+}
+
+func (app *Config) shutdown() {
+	// perform any cleanup tasks
+	app.Infolog.Println("Would run cleanup tasks...")
+
+	// block until wait group is empty
+	app.Wait.Wait()
+
+	app.Infolog.Println("Closing channels and shutting down application...")
 }
