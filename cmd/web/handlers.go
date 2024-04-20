@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 func (app *Config) HomePage(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, "home.page.gohtml", nil)
@@ -38,6 +41,11 @@ func (app *Config) PostLoginPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !validPassword {
+		app.sendEmail(Message{
+			To:      email,
+			Subject: "Failed login attempt",
+			Data:    fmt.Sprintf("Invalid login attempt. Someone uses wrong password: %s", password),
+		})
 		app.Session.Put(r.Context(), "error", "Invalid Credentials")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
