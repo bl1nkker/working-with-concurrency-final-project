@@ -58,6 +58,8 @@ func main() {
 	}
 
 	// Set up mail
+	app.Mailer = app.createMail()
+	go app.listenForMail()
 
 	// listen for signals
 	go app.listenForShutdown()
@@ -173,4 +175,24 @@ func (app *Config) shutdown() {
 	app.Wait.Wait()
 
 	app.Infolog.Println("Closing channels and shutting down application...")
+}
+
+func (app *Config) createMail() Mail {
+	errorChan := make(chan error)
+	mailerChan := make(chan Message, 100)
+	doneChan := make(chan bool)
+
+	m := Mail{
+		Domain:      "localhost",
+		Host:        "localhost",
+		Port:        1025,
+		Encryption:  "none",
+		FromAddress: "bl1nkker@gmail.com",
+		FromName:    "Daniyar Auezkhan",
+		Wait:        app.Wait,
+		ErrorChan:   errorChan,
+		MailerChan:  mailerChan,
+		DoneChan:    doneChan,
+	}
+	return m
 }
