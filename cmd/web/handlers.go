@@ -52,6 +52,11 @@ func (app *Config) PostLoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
 
+	if user.Active != 1 {
+		app.Session.Put(r.Context(), "error", "User is not active.")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+
 	// log user in
 	app.Session.Put(r.Context(), "userID", user.ID)
 	app.Session.Put(r.Context(), "user", user)
@@ -115,6 +120,28 @@ func (app *Config) PostRegisterPage(w http.ResponseWriter, r *http.Request) {
 
 func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 	// validate url
+	url := r.RequestURI
+	testUrl := fmt.Sprintf("http://localhost%s", url)
+	okay := VerifyToken(testUrl)
+	if !okay {
+		app.Session.Put(r.Context(), "error", "Invalid token")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+
+	// activate the account
+	u, err := app.Models.User.GetByEmail(r.URL.Query().Get("email"))
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "No user found")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+	u.Active = 1
+	err = u.Update()
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "Unable to update user")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+	app.Session.Put(r.Context(), "flash", "Account activated. You can now log in")
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 
 	// generate an invoice
 
