@@ -150,6 +150,26 @@ func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 	// send an email with the invoice attached
 }
 
+func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
+	// get id of a plan that is choosen
+
+	// get the plan from the db
+
+	// get the user from the session
+
+	// generate an invoice
+
+	// send an email with the invoice attached
+
+	// generate a manual
+
+	// send an email with the manual attached
+
+	// subscribe the user to an account
+
+	// redirect
+}
+
 func (app *Config) ChooseSubscription(w http.ResponseWriter, r *http.Request) {
 	if !app.Session.Exists(r.Context(), "userID") {
 		app.Session.Put(r.Context(), "warning", "You must log in to see this page")
