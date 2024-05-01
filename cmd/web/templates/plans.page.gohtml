@@ -1,6 +1,7 @@
 {{template "base" .}}
 
 {{define "content" }}
+    {{$user := .User}}
     <div class="container">
         <div class="row">
             <div class="col-md-8 offset-md-2">
@@ -15,12 +16,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{range index .Data "plan"}}
+                        {{range index .Data "plans"}}
                         <tr>
                             <td>{{.PlanName}}</td>
                             <td class="text-center">{{.PlanAmountFormatted}}/month</td>
                             <td class="text-center">
-                                <a class="btn btn-primary btn-sm" href="#!" onclick="selectPlan({{.ID}}, '{{.PlanName}}')">Select</a>
+                                {{if and ($user.Plan) (eq $user.Plan.ID .ID)}}
+                                    <strong>Current Plan</strong>
+                                {{else}}
+                                    <a class="btn btn-primary btn-sm" href="#!" onclick="selectPlan({{.ID}}, '{{.PlanName}}')">Select</a>
+                                {{end}}
                             </td>
                         </tr>
                         {{end}}
@@ -36,14 +41,14 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.8/dist/sweetalert2.all.min.js"></script>
     <script>
         function selectPlan(x, plan){
-            Swal.Fire({
+            Swal.fire({
                 title: "Subscribe",
                 html: "Are you sure you want to subscribe to the " + plan + "?",
                 showCancelButton: true,
                 confirmButtonText: "Subscribe",
             }).then((result) => {
                 if (result.isConfirmed){
-                    // window.location.href = "/subscribe"
+                    // window.location.href = "/subscribe?id=" + x
                 }
             })
         }
