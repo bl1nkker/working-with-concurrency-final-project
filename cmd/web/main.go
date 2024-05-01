@@ -49,12 +49,14 @@ func main() {
 
 	// Set up the application config
 	app := Config{
-		Session:  session,
-		DB:       db,
-		Wait:     &wg,
-		Infolog:  infoLog,
-		ErrorLog: errorLog,
-		Models:   data.New(db),
+		Session:       session,
+		DB:            db,
+		Wait:          &wg,
+		Infolog:       infoLog,
+		ErrorLog:      errorLog,
+		Models:        data.New(db),
+		ErrorChan:     make(chan error),
+		ErrorChanDone: make(chan bool),
 	}
 
 	// Set up mail
@@ -63,6 +65,9 @@ func main() {
 
 	// listen for signals
 	go app.listenForShutdown()
+
+	// listen for errors
+	go app.ListenForErrors()
 
 	// Listen for web connections
 	app.serve()
@@ -144,6 +149,18 @@ func initRedis() *redis.Pool {
 	return redisPool
 }
 
+func (app *Config) ListenForErrors() {
+	for {
+		select {
+		case err := <-app.ErrorChan:
+			// send notification to slack or etc
+			app.ErrorLog.Println(err)
+		case <-app.ErrorChanDone:
+			return
+		}
+	}
+}
+
 func (app *Config) serve() {
 	// start http server
 	srv := &http.Server{
@@ -175,11 +192,14 @@ func (app *Config) shutdown() {
 	app.Wait.Wait()
 
 	app.Mailer.DoneChan <- true
+	app.ErrorChanDone <- true
 
 	app.Infolog.Println("Closing channels and shutting down application...")
 	close(app.Mailer.MailerChan)
 	close(app.Mailer.ErrorChan)
 	close(app.Mailer.DoneChan)
+	close(app.ErrorChan)
+	close(app.ErrorChanDone)
 }
 
 func (app *Config) createMail() Mail {
